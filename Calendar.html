@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 Year Overview</title>
+    <!-- Montserrat Font with Light (300) -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --transition-enlarge: 1.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            --transition-opacity: 1.4s ease 0.5s;
+            --transition-fast: 0.4s;
+            --transition-slow: 3s;
+            --card-bg: #ffffff;
+            --card-text: #333333;
+            --overlay-bg: rgba(0,0,0,0.5);
+            --event-bg: #f5f5f5;
+            --event-border: #ddd;
+        }
+        body.dark {
+            --bg: #121212;
+            --text: #eee;
+            --day-normal: #333;
+            --day-highlight: #555;
+            --day-hover: #444;
+            --month-text: #ccc;
+            --card-bg: #1e1e1e;
+            --card-text: #eeeeee;
+            --overlay-bg: rgba(0,0,0,0.7);
+            --event-bg: #2a2a2a;
+            --event-border: #444;
+        }
+        body {
+            margin: 0;
+            padding: 80px 20px 40px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 400;
+            background: var(--bg, #f8f8f8);
+            color: var(--text, #333);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            transition: background 0.4s, color 0.4s;
+        }
+        h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 5rem;
+            margin: 0 0 50px;
+            color: var(--text);
+            letter-spacing: 0.1em;
+        }
+        .months-header {
+            display: flex;
+            justify-content: space-evenly;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto 60px;
+            font-weight: 600;
+            font-size: 1.3rem;
+            color: var(--month-text, #555);
+        }
+        .month-label {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            padding: 10px;
+            transition: opacity 0.3s;
+        }
+        .month-label:hover {
+            opacity: 0.7;
+        }
+        .month-label.active {
+            font-weight: 700;
+            opacity: 1;
+            text-decoration: underline;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(15, 22px);
+            gap: 12px;
+            justify-content: center;
+            transition: gap var(--transition-slow);
+            max-width: 600px;
+        }
+        .grid.month-active {
+            gap: 38px;
+            transition: gap var(--transition-fast);
+        }
+        .day {
+            width: 10px;
+            height: 10px;
+            background: var(--day-normal, #ddd);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background var(--transition-fast), opacity var(--transition-fast);
+            position: relative;
+            z-index: 0;
+        }
+        .day:hover:not(.highlighted) {
+            background: var(--day-hover, #bbb);
+            transform: scale(2.2);
+            z-index: 20;
+            transition: transform var(--transition-enlarge), background var(--transition-fast);
+        }
+        .day.highlighted {
+            background: var(--day-highlight, #aaa);
+            transform: scale(3.2);
+            z-index: 10;
+            transition: transform var(--transition-fast);
+        }
+        .day.highlighted:hover {
+            transform: scale(2.9);
+        }
+        .day span {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 300; /* Light style */
+            color: var(--text);
+            opacity: 0;
+            pointer-events: none;
+            font-size: 0.375rem;
+            transition: opacity var(--transition-opacity);
+        }
+        .day:hover:not(.highlighted) span {
+            opacity: 0.5;
+            font-size: 0.45rem; /* 25% smaller than previous 0.6rem */
+        }
+        .day.highlighted span {
+            opacity: 1;
+            font-size: 0.375rem;
+        }
+        .grid.month-active .day:not(.highlighted) {
+            opacity: 0.3;
+            transform: scale(0.6);
+            transition: transform var(--transition-fast), opacity var(--transition-fast);
+        }
+        /* Responsive */
+        @media (max-width: 900px) {
+            .grid {
+                grid-template-columns: repeat(12, 22px);
+                gap: 10px;
+            }
+            .grid.month-active {
+                gap: 32px;
+            }
+        }
+        @media (max-width: 700px) {
+            .grid {
+                grid-template-columns: repeat(10, 20px);
+                gap: 9px;
+            }
+            .grid.month-active {
+                gap: 28px;
+            }
+        }
+        @media (max-width: 550px) {
+            .grid {
+                grid-template-columns: repeat(8, 18px);
+                gap: 8px;
+            }
+            .grid.month-active {
+                gap: 24px;
+            }
+        }
+        @media (max-width: 450px) {
+            .grid {
+                grid-template-columns: repeat(6, 16px);
+                gap: 7px;
+            }
+            .grid.month-active {
+                gap: 20px;
+            }
+        }
+        @media (pointer: coarse) {
+            .day {
+                width: 12px;
+                height: 12px;
+            }
+        }
+        /* Modal and other styles */
+        .theme-switch-wrapper {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+        .theme-switch { display: inline-block; height: 34px; position: relative; width: 60px; }
+        .theme-switch input { display: none; }
+        .slider {
+            background-color: #ccc;
+            bottom: 0; cursor: pointer; left: 0; position: absolute; right: 0; top: 0;
+            transition: .4s; border-radius: 34px;
+        }
+        .slider:before {
+            background-color: white; bottom: 4px; content: ""; height: 26px; left: 4px;
+            position: absolute; transition: .4s; width: 26px; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #2196F3; }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        #modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--overlay-bg);
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        #modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: var(--card-bg);
+            color: var(--card-text);
+            border-radius: 28px;
+            padding: 50px 40px;
+            max-width: 700px;
+            width: 90%;
+            max-height: 90vh;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            transform: scale(0);
+            transition: opacity 0.8s 0.3s, transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        #modal.active .modal-content {
+            opacity: 1;
+            transform: scale(1);
+        }
+        #day-num {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 7rem;
+            transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1) 0.6s;
+            pointer-events: none;
+            z-index: 2;
+        }
+        #day-num sup {
+            font-size: 0.5em;
+            vertical-align: super;
+        }
+        #date-header {
+            position: absolute;
+            top: 180px;
+            left: 50px;
+            opacity: 0;
+            transition: opacity 1s 1.8s;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+            font-size: 2.2rem;
+            text-align: left;
+            z-index: 1;
+        }
+        #modal.revealed #day-num {
+            top: 70px;
+            left: 50px;
+            transform: translate(0, 0);
+            font-size: 6rem;
+        }
+        #modal.revealed #date-header {
+            opacity: 1;
+        }
+        .events-section {
+            margin-top: 240px;
+            width: 100%;
+            max-height: calc(90vh - 300px);
+            overflow-y: auto;
+        }
+        .events-section h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 1.8rem;
+            margin: 0 0 20px;
+            opacity: 0.9;
+        }
+        #events-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 30px;
+        }
+        #events-list li {
+            background: var(--event-bg);
+            border: 1px solid var(--event-border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            font-family: 'Montserrat', sans-serif;
+        }
+        #events-list li strong {
+            margin-right: 10px;
+            font-weight: 600;
+        }
+        #add-event {
+            background: #007aff;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        #add-event:hover {
+            background: #0062cc;
+        }
+        #event-form {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: var(--event-bg);
+            border-radius: 16px;
+        }
+        #event-form.active {
+            display: block;
+        }
+        #event-time, #event-desc {
+            font-family: 'Montserrat', sans-serif;
+        }
+        .form-buttons button {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+        }
+        #close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 2.5rem;
+            cursor: pointer;
+            color: var(--card-text);
+            opacity: 0.7;
+            z-index: 3;
+        }
+        #close:hover { opacity: 1; }
+    </style>
+</head>
+<body>
+    <div class="theme-switch-wrapper">
+        <label class="theme-switch" for="dark-mode-toggle">
+            <input type="checkbox" id="dark-mode-toggle">
+            <span class="slider round"></span>
+        </label>
+    </div>
+
+    <h1>2026</h1>
+    <div class="months-header" id="months-header"></div>
+    <div class="grid" id="grid"></div>
+
+    <div id="modal">
+        <div class="modal-content">
+            <div id="close">×</div>
+            <div id="day-num"></div>
+            <div id="date-header"></div>
+            <div class="events-section">
+                <h2>Events</h2>
+                <ul id="events-list"></ul>
+                <button id="add-event">+ Add Event</button>
+                <div id="event-form">
+                    <input type="time" id="event-time">
+                    <textarea id="event-desc" placeholder="Event description..."></textarea>
+                    <div class="form-buttons">
+                        <button id="save-event">Save</button>
+                        <button id="cancel-event">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const year = 2026;
+        const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+        const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+        const monthsHeader = document.getElementById('months-header');
+        const grid = document.getElementById('grid');
+        const modal = document.getElementById('modal');
+        const modalContent = modal.querySelector('.modal-content');
+        const dayNum = document.getElementById('day-num');
+        const dateHeader = document.getElementById('date-header');
+        const eventsList = document.getElementById('events-list');
+        const addEventBtn = document.getElementById('add-event');
+        const eventForm = document.getElementById('event-form');
+        const eventTime = document.getElementById('event-time');
+        const eventDesc = document.getElementById('event-desc');
+        const saveEvent = document.getElementById('save-event');
+        const cancelEvent = document.getElementById('cancel-event');
+        const closeBtn = document.getElementById('close');
+
+        let activeMonth = null;
+
+        function getOrdinal(n) {
+            const s = ["th", "st", "nd", "rd"];
+            const v = n % 100;
+            return s[(v - 20) % 10] || s[v] || s[0];
+        }
+
+        months.forEach((month, index) => {
+            const label = document.createElement('div');
+            label.className = 'month-label';
+            label.textContent = month;
+            label.dataset.month = index;
+            label.addEventListener('mouseenter', handleMouseEnter);
+            label.addEventListener('mouseleave', handleMouseLeave);
+            label.addEventListener('click', handleClick);
+            monthsHeader.appendChild(label);
+        });
+
+        let dayOfYear = 1;
+        let currentMonthIndex = 0;
+        let dayInMonth = 1;
+
+        for (let i = 0; i < 365; i++) {
+            const day = document.createElement('div');
+            day.className = 'day';
+            day.dataset.month = currentMonthIndex;
+            day.dataset.dayOfYear = dayOfYear;
+
+            const numSpan = document.createElement('span');
+            numSpan.textContent = dayInMonth;
+            day.appendChild(numSpan);
+
+            day.addEventListener('click', openModal);
+            grid.appendChild(day);
+
+            dayOfYear++;
+            dayInMonth++;
+            if (dayInMonth > daysInMonth[currentMonthIndex]) {
+                dayInMonth = 1;
+                currentMonthIndex++;
+            }
+        }
+
+        function handleMouseEnter(e) {
+            const month = parseInt(e.currentTarget.dataset.month);
+            if (activeMonth === null) {
+                document.documentElement.style.setProperty('--transition-fast', '0.4s');
+                grid.classList.add('month-active');
+                highlightDays(month);
+            }
+        }
+        function handleMouseLeave(e) {
+            if (activeMonth === null) {
+                document.documentElement.style.setProperty('--transition-fast', '3s');
+                grid.classList.remove('month-active');
+                unhighlightDays();
+            }
+        }
+        function handleClick(e) {
+            e.stopPropagation();
+            const month = parseInt(e.currentTarget.dataset.month);
+            if (activeMonth === month) {
+                activeMonth = null;
+                document.documentElement.style.setProperty('--transition-fast', '3s');
+                grid.classList.remove('month-active');
+                unhighlightDays();
+            } else {
+                activeMonth = month;
+                document.documentElement.style.setProperty('--transition-fast', '0.4s');
+                grid.classList.add('month-active');
+                unhighlightDays();
+                highlightDays(month);
+            }
+            updateMonthLabels();
+        }
+
+        function highlightDays(month) {
+            document.querySelectorAll('.day').forEach(dayEl => {
+                if (parseInt(dayEl.dataset.month) === month) {
+                    dayEl.classList.add('highlighted');
+                }
+            });
+        }
+        function unhighlightDays() {
+            document.querySelectorAll('.day.highlighted').forEach(dayEl => {
+                dayEl.classList.remove('highlighted');
+            });
+        }
+        function updateMonthLabels() {
+            document.querySelectorAll('.month-label').forEach(label => {
+                label.classList.toggle('active', parseInt(label.dataset.month) === activeMonth);
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (modal.classList.contains('active')) return;
+            if (activeMonth !== null && !e.target.closest('.month-label') && !e.target.closest('.day')) {
+                activeMonth = null;
+                document.documentElement.style.setProperty('--transition-fast', '3s');
+                grid.classList.remove('month-active');
+                unhighlightDays();
+                updateMonthLabels();
+            }
+        });
+
+        function openModal(e) {
+            e.stopPropagation();
+            const clickedDay = e.currentTarget;
+            const dayOfYear = clickedDay.dataset.dayOfYear;
+
+            const rect = clickedDay.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            modalContent.style.transformOrigin = `${centerX}px ${centerY}px`;
+
+            const date = new Date(year, 0, dayOfYear);
+            const dayOfMonth = date.getDate();
+            const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+            const monthStr = date.toLocaleDateString('en-US', { month: 'long' });
+            const ordinal = getOrdinal(dayOfMonth);
+
+            dayNum.innerHTML = `${dayOfMonth}<sup>${ordinal}</sup>`;
+            dateHeader.textContent = `${weekday}, ${monthStr} ${year}`;
+
+            eventsList.innerHTML = '<li>No events yet</li>';
+
+            modal.classList.add('active');
+
+            setTimeout(() => {
+                modal.classList.add('revealed');
+            }, 600);
+        }
+
+        function closeModal() {
+            modal.classList.remove('revealed');
+            eventForm.classList.remove('active');
+
+            setTimeout(() => {
+                modal.classList.remove('active');
+                modalContent.style.transformOrigin = 'center center';
+            }, 300);
+        }
+
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeModal();
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        addEventBtn.addEventListener('click', () => {
+            eventForm.classList.add('active');
+            eventTime.value = '';
+            eventDesc.value = '';
+        });
+
+        cancelEvent.addEventListener('click', () => {
+            eventForm.classList.remove('active');
+        });
+
+        saveEvent.addEventListener('click', () => {
+            const time = eventTime.value;
+            const desc = eventDesc.value.trim();
+            if (time && desc) {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>${time}</strong> ${desc}`;
+                eventsList.appendChild(li);
+                if (eventsList.querySelector('li:first-child') && eventsList.querySelector('li:first-child').textContent === 'No events yet') {
+                    eventsList.innerHTML = '';
+                    eventsList.appendChild(li);
+                }
+            } else if (!time || !desc) {
+                alert('Please fill in both time and description.');
+                return;
+            }
+            eventForm.classList.remove('active');
+        });
+
+        const darkToggle = document.getElementById('dark-mode-toggle');
+        darkToggle.addEventListener('change', () => {
+            document.body.classList.toggle('dark');
+        });
+    </script>
+</body>
+</html>
